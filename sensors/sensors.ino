@@ -33,6 +33,9 @@
 #include <hal/hal.h>
 #include <SPI.h>
 
+#define LDRpin A0
+int LDRValue = 0;
+
 // LoRaWAN NwkSKey, network session key
 // This is the default Semtech key, which is used by the early prototype TTN
 // network.
@@ -53,12 +56,12 @@ void os_getArtEui (u1_t* buf) { }
 void os_getDevEui (u1_t* buf) { }
 void os_getDevKey (u1_t* buf) { }
 
-static uint8_t mydata[] = "Hello, world!";
+static uint8_t payload[2];
 static osjob_t sendjob;
 
 // Schedule TX every this many seconds (might become longer due to duty
 // cycle limitations).
-const unsigned TX_INTERVAL = 60;
+const unsigned TX_INTERVAL = 20;
 
 // Pin mapping
 const lmic_pinmap lmic_pins = {
@@ -138,15 +141,21 @@ void do_send(osjob_t* j){
     if (LMIC.opmode & OP_TXRXPEND) {
         Serial.println(F("OP_TXRXPEND, not sending"));
     } else {
+        // Hier moet eigen code 
+        LDRValue = analogRead(LDRpin);
+        Serial.println(LDRValue);
+        payload[0] = LDRValue >> 8;
+        payload[1] = LDRValue;
+        // Einde
         // Prepare upstream data transmission at the next possible time.
-        LMIC_setTxData2(1, mydata, sizeof(mydata)-1, 0);
+        LMIC_setTxData2(1, payload, sizeof(payload), 0);
         Serial.println(F("Packet queued"));
     }
     // Next TX is scheduled after TX_COMPLETE event.
 }
 
 void setup() {
-    Serial.begin(115200);
+    Serial.begin(9600);
     Serial.println(F("Starting"));
 
     #ifdef VCC_ENABLE
